@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance Tracker</title>
+    <style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f7fb;
+    color: #222;
+}
+header {
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    color: white;
+    padding: 25px 6%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+header h1 { font-size: 28px; margin-bottom: 8px; }
+header p { opacity: 0.9; }
+.threshold-btn {
+    background: white; color: #2563eb; border: none;
+    padding: 12px 18px; border-radius: 8px; cursor: pointer; font-weight: bold;
+}
+.threshold-btn:hover { background: #e8efff; }
+main { width: 90%; max-width: 1300px; margin: 30px auto; }
+.summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+.summary-card {
+    background: white; padding: 22px; border-radius: 14px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08); display: flex;
+    align-items: center; gap: 18px; border-left: 5px solid #2563eb;
+}
+.summary-card span { font-size: 35px; }
+.summary-card h3 { font-size: 25px; color: #2563eb; }
+.summary-card p { color: #666; margin-top: 5px; }
+.summary-card.present { border-left-color: #16a34a; }
+.summary-card.present h3 { color: #16a34a; }
+.summary-card.absent { border-left-color: #dc2626; }
+.summary-card.absent h3 { color: #dc2626; }
+.summary-card.percentage { border-left-color: #9333ea; }
+.summary-card.percentage h3 { color: #9333ea; }
+.form-section, .attendance-section, .records-section {
+    background: white; padding: 25px; border-radius: 14px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.07); margin-bottom: 30px;
+}
+.form-section h2, .section-title h2 { margin-bottom: 8px; }
+.section-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.section-title p { color: #777; }
+#studentForm { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; margin-top: 20px; }
+input, select { padding: 13px; border: 1px solid #d5d9e2; border-radius: 8px; font-size: 15px; outline: none; }
+input:focus, select:focus { border-color: #2563eb; }
+.add-btn { background: #2563eb; color: white; border: none; padding: 13px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+.add-btn:hover { background: #1d4ed8; }
+.attendance-table-container { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 15px; border-bottom: 1px solid #eee; text-align: left; }
+th { background: #f5f7fb; color: #444; }
+.student-name { font-weight: bold; }
+.attendance-buttons { display: flex; gap: 7px; }
+.attendance-buttons button { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.present-btn { background: #dcfce7; color: #15803d; }
+.absent-btn { background: #fee2e2; color: #b91c1c; }
+.leave-btn { background: #fef3c7; color: #92400e; }
+.active { outline: 3px solid #333; }
+.percentage-value { font-weight: bold; }
+.filters { display: grid; grid-template-columns: 1fr 250px; gap: 15px; margin-bottom: 25px; }
+.student-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.student-card { border: 1px solid #e1e5ec; border-radius: 12px; padding: 20px; background: #fff; }
+.student-card.low { border: 2px solid #ef4444; background: #fff7f7; }
+.student-card h3 { margin-bottom: 8px; }
+.student-card p { color: #666; margin: 5px 0; }
+.attendance-percentage { font-size: 25px; font-weight: bold; margin: 15px 0; }
+.low-text { color: #dc2626; font-weight: bold; }
+.good-text { color: #16a34a; font-weight: bold; }
+.card-buttons { display: flex; gap: 8px; margin-top: 15px; }
+.card-buttons button { border: none; padding: 9px 12px; border-radius: 6px; cursor: pointer; }
+.history-btn { background: #dbeafe; color: #1d4ed8; }
+.edit-btn { background: #fef3c7; color: #92400e; }
+.delete-btn { background: #fee2e2; color: #b91c1c; }
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); align-items: center; justify-content: center; }
+.modal-content { background: white; width: 90%; max-width: 600px; max-height: 80vh; overflow-y: auto; padding: 30px; border-radius: 15px; position: relative; }
+.close { position: absolute; right: 20px; top: 12px; font-size: 30px; cursor: pointer; }
+.history-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
+.status-present { color: #16a34a; font-weight: bold; }
+.status-absent { color: #dc2626; font-weight: bold; }
+.status-leave { color: #d97706; font-weight: bold; }
+@media (max-width: 1000px) {
+    .summary { grid-template-columns: repeat(2, 1fr); }
+    #studentForm { grid-template-columns: 1fr 1fr; }
+    .student-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 650px) {
+    header { flex-direction: column; align-items: flex-start; }
+    header h1 { font-size: 22px; }
+    main { width: 94%; }
+    .summary { grid-template-columns: 1fr; }
+    #studentForm { grid-template-columns: 1fr; }
+    .section-title { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .filters { grid-template-columns: 1fr; }
+    .student-grid { grid-template-columns: 1fr; }
+    th, td { white-space: nowrap; }
+}
+    </style>
+</head>
+<body>
+<header>
+    <div>
+        <h1>🎓 Student Attendance Tracker</h1>
+        <p>Manage students and monitor daily attendance</p>
+    </div>
+    <button class="threshold-btn" onclick="changeThreshold()">⚙ Attendance Threshold</button>
+</header>
+<main>
+    <section class="summary">
+        <div class="summary-card"><span>👨‍🎓</span><div><h3 id="totalStudents">0</h3><p>Total Students</p></div></div>
+        <div class="summary-card present"><span>✅</span><div><h3 id="presentStudents">0</h3><p>Present Today</p></div></div>
+        <div class="summary-card absent"><span>❌</span><div><h3 id="absentStudents">0</h3><p>Absent Today</p></div></div>
+        <div class="summary-card percentage"><span>📊</span><div><h3 id="overallPercentage">0%</h3><p>Overall Attendance</p></div></div>
+    </section>
+    <section class="form-section">
+        <h2>➕ Add Student</h2>
+        <form id="studentForm">
+            <input type="text" id="studentName" placeholder="Student Name" required>
+            <input type="text" id="studentId" placeholder="Student ID" required>
+            <input type="text" id="department" placeholder="Department" required>
+            <button type="submit" class="add-btn">Add Student</button>
+        </form>
+    </section>
+    <section class="attendance-section">
+        <div class="section-title"><div><h2>📅 Mark Attendance</h2><p>Select a date and mark attendance</p></div><input type="date" id="attendanceDate"></div>
+        <div class="attendance-table-container">
+            <table><thead><tr><th>Student</th><th>ID</th><th>Department</th><th>Attendance</th><th>Percentage</th></tr></thead><tbody id="attendanceTableBody"></tbody></table>
+        </div>
+    </section>
+    <section class="records-section">
+        <div class="section-title"><div><h2>👥 Student Records</h2><p>Search and filter student records</p></div></div>
+        <div class="filters">
+            <input type="text" id="searchInput" placeholder="🔍 Search by name, ID or department..." oninput="displayStudents()">
+            <select id="statusFilter" onchange="displayStudents()"><option value="all">All Students</option><option value="low">Low Attendance</option><option value="good">Good Attendance</option></select>
+        </div>
+        <div id="studentCards" class="student-grid"></div>
+    </section>
+</main>
+<div id="historyModal" class="modal">
+    <div class="modal-content"><span class="close" onclick="closeHistory()">×</span><h2>📋 Attendance History</h2><h3 id="historyStudentName"></h3><div id="historyContent"></div></div>
+</div>
+<script>
+let students = JSON.parse(localStorage.getItem("students")) || [];
+let attendance = JSON.parse(localStorage.getItem("attendance")) || {};
+let threshold = Number(localStorage.getItem("attendanceThreshold")) || 75;
+document.addEventListener("DOMContentLoaded", () => {
+    const today = new Date().toISOString().split("T")[0];
+    document.getElementById("attendanceDate").value = today;
+    document.getElementById("attendanceDate").addEventListener("change", renderAttendanceTable);
+    renderAttendanceTable(); displayStudents(); updateSummary();
+});
+function saveData() {
+    localStorage.setItem("students", JSON.stringify(students));
+    localStorage.setItem("attendance", JSON.stringify(attendance));
+}
+document.getElementById("studentForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const name = document.getElementById("studentName").value.trim();
+    const id = document.getElementById("studentId").value.trim();
+    const department = document.getElementById("department").value.trim();
+    if (students.some(student => student.id.toLowerCase() === id.toLowerCase())) {
+        alert("Student ID already exists!"); return;
+    }
+    const student = { id: id, name: name, department: department };
+    students.push(student); saveData(); this.reset();
+    renderAttendanceTable(); displayStudents(); updateSummary();
+    alert("Student added successfully!");
+});
+function renderAttendanceTable() {
+    const tbody = document.getElementById("attendanceTableBody");
+    const date = document.getElementById("attendanceDate").value;
+    tbody.innerHTML = "";
+    if (students.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No students added yet.</td></tr>`; return;
+    }
+    students.forEach(student => {
+        const percentage = calculatePercentage(student.id);
+        const currentStatus = getAttendanceStatus(student.id, date);
+        const row = document.createElement("tr");
+        row.innerHTML = `<td class="student-name">${student.name}</td><td>${student.id}</td><td>${student.department}</td>
+            <td><div class="attendance-buttons">
+            <button class="present-btn ${currentStatus === "Present" ? "active" : ""}" onclick="markAttendance('${student.id}', '${date}', 'Present')">Present</button>
+            <button class="absent-btn ${currentStatus === "Absent" ? "active" : ""}" onclick="markAttendance('${student.id}', '${date}', 'Absent')">Absent</button>
+            <button class="leave-btn ${currentStatus === "Leave" ? "active" : ""}" onclick="markAttendance('${student.id}', '${date}', 'Leave')">Leave</button>
+            </div></td><td class="percentage-value">${percentage}%</td>`;
+        tbody.appendChild(row);
+    });
+}
+function markAttendance(studentId, date, status) {
+    if (!date) { alert("Please select a date."); return; }
+    if (!attendance[date]) { attendance[date] = {}; }
+    attendance[date][studentId] = status; saveData();
+    renderAttendanceTable(); displayStudents(); updateSummary();
+}
+function getAttendanceStatus(studentId, date) {
+    if (attendance[date] && attendance[date][studentId]) { return attendance[date][studentId]; }
+    return "";
+}
+function calculatePercentage(studentId) {
+    let totalDays = 0; let presentDays = 0;
+    Object.keys(attendance).forEach(date => {
+        if (attendance[date][studentId]) {
+            totalDays++;
+            if (attendance[date][studentId] === "Present") { presentDays++; }
+        }
+    });
+    if (totalDays === 0) { return 0; }
+    return Math.round((presentDays / totalDays) * 100);
+}
+function displayStudents() {
+    const container = document.getElementById("studentCards");
+    const search = document.getElementById("searchInput").value.toLowerCase();
+    const filter = document.getElementById("statusFilter").value;
+    container.innerHTML = "";
+    const filteredStudents = students.filter(student => {
+        const matchesSearch = student.name.toLowerCase().includes(search) || student.id.toLowerCase().includes(search) || student.department.toLowerCase().includes(search);
+        const percentage = calculatePercentage(student.id);
+        let matchesFilter = true;
+        if (filter === "low") { matchesFilter = percentage < threshold; }
+        if (filter === "good") { matchesFilter = percentage >= threshold; }
+        return matchesSearch && matchesFilter;
+    });
+    if (filteredStudents.length === 0) {
+        container.innerHTML = `<p style="grid-column:1/-1;text-align:center;">No students found.</p>`; return;
+    }
+    filteredStudents.forEach(student => {
+        const percentage = calculatePercentage(student.id);
+        const isLow = percentage < threshold;
+        const card = document.createElement("div");
+        card.className = `student-card ${isLow ? "low" : ""}`;
+        card.innerHTML = `<h3>👤 ${student.name}</h3><p><strong>ID:</strong> ${student.id}</p><p><strong>Department:</strong> ${student.department}</p>
+            <div class="attendance-percentage ${isLow ? "low-text" : "good-text"}">${percentage}%</div>
+            <p>${isLow ? `⚠ Below ${threshold}% threshold` : `✓ Attendance is good`}</p>
+            <div class="card-buttons">
+            <button class="history-btn" onclick="showHistory('${student.id}')">📋 History</button>
+            <button class="edit-btn" onclick="editStudent('${student.id}')">✏ Edit</button>
+            <button class="delete-btn" onclick="deleteStudent('${student.id}')">🗑 Delete</button>
+            </div>`;
+        container.appendChild(card);
+    });
+}
+function editStudent(studentId) {
+    const student = students.find(s => s.id === studentId); if (!student) return;
+    const newName = prompt("Enter student name:", student.name); if (newName === null) return;
+    const newDepartment = prompt("Enter department:", student.department); if (newDepartment === null) return;
+    student.name = newName.trim(); student.department = newDepartment.trim();
+    saveData(); renderAttendanceTable(); displayStudents();
+}
+function deleteStudent(studentId) {
+    const student = students.find(s => s.id === studentId); if (!student) return;
+    const confirmDelete = confirm(`Delete ${student.name}?`); if (!confirmDelete) return;
+    students = students.filter(student => student.id !== studentId);
+    Object.keys(attendance).forEach(date => { if (attendance[date][studentId]) { delete attendance[date][studentId]; } });
+    saveData(); renderAttendanceTable(); displayStudents(); updateSummary();
+}
+function showHistory(studentId) {
+    const student = students.find(s => s.id === studentId); if (!student) return;
+    document.getElementById("historyStudentName").textContent = `${student.name} - ${student.id}`;
+    const historyContent = document.getElementById("historyContent");
+    historyContent.innerHTML = ""; let found = false;
+    Object.keys(attendance).sort().reverse().forEach(date => {
+        const status = attendance[date][studentId];
+        if (status) {
+            found = true; const item = document.createElement("div"); let statusClass = "";
+            if (status === "Present") { statusClass = "status-present"; }
+            if (status === "Absent") { statusClass = "status-absent"; }
+            if (status === "Leave") { statusClass = "status-leave"; }
+            item.className = "history-item";
+            item.innerHTML = `<span>📅 ${date}</span><span class="${statusClass}">${status}</span>`;
+            historyContent.appendChild(item);
+        }
+    });
+    if (!found) { historyContent.innerHTML = "<p>No attendance records found.</p>"; }
+    document.getElementById("historyModal").style.display = "flex";
+}
+function closeHistory() { document.getElementById("historyModal").style.display = "none"; }
+function changeThreshold() {
+    const newThreshold = prompt("Enter attendance threshold percentage:", threshold); if (newThreshold === null) return;
+    const value = Number(newThreshold);
+    if (isNaN(value) || value < 0 || value > 100) { alert("Please enter a number between 0 and 100."); return; }
+    threshold = value; localStorage.setItem("attendanceThreshold", threshold); displayStudents();
+}
+function updateSummary() {
+    const today = new Date().toISOString().split("T")[0];
+    let present = 0; let absent = 0;
+    students.forEach(student => {
+        const status = getAttendanceStatus(student.id, today);
+        if (status === "Present") { present++; }
+        if (status === "Absent") { absent++; }
+    });
+    let totalRecords = 0; let totalPresent = 0;
+    Object.keys(attendance).forEach(date => {
+        Object.keys(attendance[date]).forEach(studentId => {
+            totalRecords++;
+            if (attendance[date][studentId] === "Present") { totalPresent++; }
+        });
+    });
+    const overall = totalRecords === 0 ? 0 : Math.round((totalPresent / totalRecords) * 100);
+    document.getElementById("totalStudents").textContent = students.length;
+    document.getElementById("presentStudents").textContent = present;
+    document.getElementById("absentStudents").textContent = absent;
+    document.getElementById("overallPercentage").textContent = `${overall}%`;
+}
+window.onclick = function(event) {
+    const modal = document.getElementById("historyModal");
+    if (event.target === modal) { modal.style.display = "none"; }
+};
+</script>
+</body>
+  </html>
